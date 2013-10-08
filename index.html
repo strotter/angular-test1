@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Test</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular-resource.js"></script>
+  </head>
+
+<script type="text/javascript">
+var HOST = 'http://localhost:4567';
+var app = angular.module('commentApp', []);
+
+app.controller('CommentsController', function($scope, $http) {
+  $scope.comments = [ { username: 'Test123', comment: 'Comment1' }, { username: 'Test321', comment: 'Comment2'} ];
+
+  $scope.loadAllComments = function() {
+    $http.get(HOST + '/comments/all').success(function(data) {
+      $scope.comments = data;
+      console.log('Getting comments successfully: ' + data);
+    }).error(function(data, status, headers, config) {
+      console.log('Error getting data, status: ' + status);
+    });
+  }
+
+  $scope.addNewComment = function() {
+    // Push to screen then POST to server
+    if ($scope.username && $scope.comment) {
+      // Ideally push, add spinner of some kind, receive OK, then add to list
+      // or error message from $http/$resource
+      var newComment = { username: $scope.username, comment: $scope.comment };
+      $scope.comments.push(newComment);
+      $http.post(HOST + '/comment/new', newComment).success(function(data) {
+        console.log("Yay post success: " + data);
+      }).error(function(data) {
+        console.log("Sad times, did not post to the service.");
+      });
+    }
+  }
+});
+
+app.controller('SearchController', function($scope, $http) {
+  $scope.searchResults = "SampleResults";
+
+  $scope.updateSearch = function() {
+    if ($scope.searchText.length > 3) {
+      console.log($scope.searchText + ": length greater than 3, searching comments");
+
+      // TODO: Cleanup search text, using urlencode or angular sanitize?
+      $http.get(HOST + '/comments/all?search=' + $scope.searchText).success(function (data) {
+        $scope.searchResults = data;
+      }).error(function (data) {
+        $scope.searchResults = "Error retrieving search results";
+      });
+    }
+  }
+});
+</script>
+
+<body ng-app="commentApp">
+  <div class="leftComments" ng-controller="CommentsController">
+    <input type="text" ng-model="username" />
+    <input type="text" ng-model="comment" />
+    <button ng-click="addNewComment()">Add new</button>
+    <button ng-click="loadAllComments()">Refresh comments</button>
+    <ul>
+      <li ng-show="comments.length > 0" ng-repeat="c in comments">
+        {{ c.username }}: {{ c.comment }}
+      </li>
+    </ul>
+  </div>
+  <div class="rightQuickSearch" ng-controller="SearchController">
+    <input type="text" ng-model="searchText" ng-change="updateSearch()" />
+    <textarea ng-model="searchResults"></textarea>
+  </div>
+</body>
+</html>
